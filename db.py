@@ -226,3 +226,98 @@ def update_player_photo(player_id: int, file_buffer) -> str:
 def ensure_fotos_dir():
     FOTOS_DIR.mkdir(exist_ok=True)
     return str(FOTOS_DIR)
+
+# db.py - añadir al final o después de las agregaciones
+
+from typing import Dict
+from datetime import datetime
+
+def _entes_scores_from_match(m: Match) -> Dict[str, Optional[int]]:
+    """
+    Devuelve diccionario con los goles de Entes FC y del rival para el match m.
+    Interpreta 'local' True = Entes FC es local (home_score), else Entes FC es visitante (away_score).
+    Si home_score/away_score es None -> devuelve None para esos goles.
+    """
+    if m.home_score is None and m.away_score is None:
+        return {"entes": None, "opponent": None}
+    if m.local:
+        return {"entes": m.home_score, "opponent": m.away_score}
+    else:
+        return {"entes": m.away_score, "opponent": m.home_score}
+
+def get_match_history(limit: Optional[int] = None, start_date: Optional[str] = None, end_date: Optional[str] = None) -> List[Dict]:
+    """
+    Retorna lista de matches (más recientes primero) con resultado relativo a Entes FC.
+    start_date / end_date aceptan strings 'YYYY-MM-DD' (inclusive).
+    Cada item: {id, fecha, rival, local (True si Entes FC local), entes_goals, opp_goals, result}
+    result: "W" (victoria Entes), "D" (empate), "L" (derrota), "PENDING" (si falta marcador)
+    """
+    with get_session() as session:
+        q = session.query(Match).order_by(Match.fecha.desc())
+        if start_date:
+            q = q.filter(Match.fecha >= str(start_date))
+        if end_date:
+            q = q.filter(Match.fecha <= str(end_date))
+        if limit:
+            rows = q.limit(limit).all()
+        else:
+            rows = q.all()
+
+        out = []
+        for m in rows:
+            scores = _entes_scores_from_match(m)
+            entes = scores["entes"]
+            opp = scores["opponent"]
+            if entes is None or opp is None:
+                result = "PENDING"
+            else:
+                if entes > opp:
+                    result = "W"
+                elif entes == opp:
+                    result = "D"
+                else:
+                    result = "L"
+            out.append({
+                "id": m.id,
+                "fecha": m.fecha,
+                "rival": m.rival or "",
+                "local": bool(m.local),
+                "entes_goals": entes,
+                "opponent_goals": opp,
+                "result": result,
+                "home_score": m.home_score,
+                "away_score": m.away_score
+            })
+        return out
+
+def get_team_record(start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, int]:
+    """
+    Calcula el registro global de Entes FC en el rango de fechas opcional.
+    Retorna diccionario: {'played','wins','draws','losses','goals_for','goals_against','goal_diff','points'}
+    """
+    history = get_match_history(start_date=start_date, end_date=end_date)
+    played = wins = draws = losses = gf = ga = 0
+    for m in history:
+        if m["entes_goals"] is None or m["opponent_goals"] is None:
+            continue  # partido sin marcador -> no cuenta como jugado
+        played += 1
+        gf += int(m["entes_goals"])
+        ga += int(m["opponent_goals"])
+        if m["entes_goals"] > m["opponent_goals"]:
+            wins += 1
+        elif m["entes_goals"] == m["opponent_goals"]:
+            draws += 1
+        else:
+            losses += 1
+    points = wins * 3 + draws
+    return {
+        "played": played,
+        "wins": wins,
+        "draws": draws,
+        "losses": losses,
+        "goals_for": gf,
+        "goals_against": ga,
+        "goal_diff": gf - ga,
+        "points": points
+    }
+
