@@ -142,21 +142,27 @@ def get_stats_by_match(match_id: int) -> List[PlayerStats]:
 
 
 # ---------- Agregaciones ----------
-def get_player_totals(player_id: int) -> Tuple[int, int, int, int]:
+def get_player_totals(player_id: int):
     """
-    Retorna (total_goles, total_asistencias, suma_goles_asistencias, partidos_jugados).
-    partidos_jugados = count de filas PlayerStats para ese jugador.
+    Retorna un tuple con:
+      (total_goles, total_asistencias, suma_goles_asistencias, matches_played_distinct, partidos_jugados_sum)
+
+    - matches_played_distinct: COUNT(DISTINCT match_id) — cuántos partidos distintos aparece el jugador.
+    - partidos_jugados_sum: SUM(partidos_jugados) — si usas ese campo para indicar 1/0 u horas, se suma.
     """
     with get_session() as session:
         row = session.query(
-            func.coalesce(func.sum(PlayerStats.goles), 0),
-            func.coalesce(func.sum(PlayerStats.asistencias), 0),
-            func.coalesce(func.count(PlayerStats.id), 0)
+            func.coalesce(func.sum(PlayerStats.goles), 0).label("goles"),
+            func.coalesce(func.sum(PlayerStats.asistencias), 0).label("asistencias"),
+            func.coalesce(func.count(distinct(PlayerStats.match_id)), 0).label("matches_played"),
+            func.coalesce(func.sum(func.coalesce(PlayerStats.partidos_jugados, 0)), 0).label("pjs_sum")
         ).filter(PlayerStats.player_id == player_id).one()
-        goles = int(row[0])
-        asistencias = int(row[1])
-        partidos = int(row[2])
-        return goles, asistencias, goles + asistencias, partidos
+
+        goles = int(row.goles or 0)
+        asistencias = int(row.asistencias or 0)
+        matches_played = int(row.matches_played or 0)
+        pjs_sum = int(row.pjs_sum or 0)
+        return goles, asistencias, goles + asistencias, matches_played, pjs_sum
 
 def get_top_scorers(limit: int = 5) -> List[Tuple[int, str, int]]:
     with get_session() as session:
