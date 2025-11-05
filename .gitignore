@@ -7,7 +7,6 @@ __pycache__/
 *.pyc
 
 # DB and uploads
-data/
 fotos/
 uploads/
 
