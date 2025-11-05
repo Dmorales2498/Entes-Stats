@@ -81,7 +81,7 @@ if "flash_message" in st.session_state:
 # Definir páginas visibles según rol
 role = st.session_state.get("role", None)
 if role == "admin":
-    PAGES = ["Inicio", "Crear jugador", "Crear partido", "Añadir estadísticas", "Reportes", "Eliminar jugador",Editar estadísticas]
+    PAGES = ["Inicio", "Crear jugador", "Crear partido", "Añadir estadísticas", "Reportes", "Eliminar jugador","Editar estadísticas"]
 elif role == "viewer":
     PAGES = ["Inicio", "Reportes"]
 else:
