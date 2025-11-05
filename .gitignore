@@ -1,0 +1,16 @@
+# Virtual env
+venv/
+.env
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+
+# DB and uploads
+data/
+fotos/
+uploads/
+
+# OS
+.DS_Store
+Thumbs.db
