@@ -321,3 +321,44 @@ def get_team_record(start_date: Optional[str] = None, end_date: Optional[str] = 
         "points": points
     }
 
+
+# db.py  -- agregar estas funciones
+
+def get_stat_by_id(stat_id: int):
+    """Retorna un PlayerStats por su id (o None si no existe)."""
+    with get_session() as session:
+        return session.get(PlayerStats, stat_id)
+
+
+def update_player_stats(stat_id: int, *, goles: Optional[int] = None,
+                        asistencias: Optional[int] = None,
+                        partidos_jugados: Optional[int] = None) -> Optional[PlayerStats]:
+    """
+    Actualiza campos de un registro PlayerStats y retorna el objeto actualizado.
+    Pasa solo los campos que quieras modificar (None = no tocar).
+    """
+    with get_session() as session:
+        stat = session.get(PlayerStats, stat_id)
+        if not stat:
+            return None
+        if goles is not None:
+            stat.goles = int(goles)
+        if asistencias is not None:
+            stat.asistencias = int(asistencias)
+        if partidos_jugados is not None:
+            stat.partidos_jugados = int(partidos_jugados)
+        session.add(stat)
+        session.flush()
+        session.refresh(stat)
+        return stat
+
+
+def delete_player_stats(stat_id: int) -> bool:
+    """Elimina un registro PlayerStats. Retorna True si se eliminó, False si no existía."""
+    with get_session() as session:
+        stat = session.get(PlayerStats, stat_id)
+        if not stat:
+            return False
+        session.delete(stat)
+        return True
+
