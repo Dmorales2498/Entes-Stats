@@ -248,7 +248,7 @@ elif page == "Reportes":
     sel = st.selectbox("Seleccione jugador", options=[(p.id, p.nombre) for p in players], format_func=lambda x: x[1])
     if sel:
         pid = sel[0] if isinstance(sel, tuple) else sel
-        goles, asist, tot, partidos = get_player_totals(pid)
+        goles, asist, tot, partidos,pjs_sum = get_player_totals(pid)
         st.write(f"Goles: **{goles}**")
         st.write(f"Asistencias: **{asist}**")
         st.write(f"Total (Goles + Asist): **{tot}**")
