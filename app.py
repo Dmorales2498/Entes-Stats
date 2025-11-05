@@ -4,12 +4,13 @@ from pathlib import Path
 from PIL import Image
 import os
 
+# app.py (imports desde db) — incluir estas funciones
 from db import (
     create_player, get_players, ensure_fotos_dir,
     create_match, get_matches, add_player_stats,
     get_player_totals, get_top_scorers, get_top_assisters, get_top_contributions,
     delete_player, update_player_photo,
-    get_match_history, get_team_record
+    get_stats_by_player, get_stat_by_id, update_player_stats, delete_player_stats
 )
 
 
@@ -80,7 +81,7 @@ if "flash_message" in st.session_state:
 # Definir páginas visibles según rol
 role = st.session_state.get("role", None)
 if role == "admin":
-    PAGES = ["Inicio", "Crear jugador", "Crear partido", "Añadir estadísticas", "Reportes", "Eliminar jugador"]
+    PAGES = ["Inicio", "Crear jugador", "Crear partido", "Añadir estadísticas", "Reportes", "Eliminar jugador",Editar estadísticas]
 elif role == "viewer":
     PAGES = ["Inicio", "Reportes"]
 else:
@@ -316,3 +317,83 @@ elif page == "Eliminar jugador":
             delete_player(player_id)
             st.session_state["flash_message"] = f"Jugador eliminado: {player_name}"
             st.rerun()
+
+# ---------- Editar estadísticas (nueva página) ----------
+elif page == "Editar estadísticas":
+    if role != "admin":
+        st.warning("No tienes permiso para acceder a esta sección.")
+        st.stop()
+
+    st.header("Editar / Eliminar estadísticas")
+
+    # 1) Seleccionar jugador para listar sus stats
+    players = get_players()
+    if not players:
+        st.info("No hay jugadores registrados.")
+    else:
+        player_opt = st.selectbox("Selecciona jugador para ver sus estadísticas", options=[(p.id, p.nombre) for p in players], format_func=lambda x: x[1])
+        player_id = player_opt[0] if isinstance(player_opt, tuple) else player_opt
+
+        # 2) Mostrar lista de stats del jugador (ID, partido, goles, asist)
+        stats = get_stats_by_player(player_id)
+        if not stats:
+            st.info("Este jugador no tiene estadísticas registradas.")
+        else:
+            # construir lista legible y permitir seleccionar por id
+            options = []
+            for s in stats:
+                # buscar info del partido para mostrar fecha/rival
+                match = None
+                try:
+                    match = get_match(s.match_id)
+                except Exception:
+                    match = None
+                match_label = f"Match {s.match_id}"
+                if match:
+                    match_label = f"{match.fecha} vs {match.rival or '---'} (id {match.id})"
+                label = f"id:{s.id} | {match_label} | G:{s.goles} A:{s.asistencias} PJS:{s.partidos_jugados or '-'}"
+                options.append((s.id, label))
+
+            sel = st.selectbox("Selecciona estadística a editar", options=options, format_func=lambda x: x[1])
+
+            stat_id = sel[0] if isinstance(sel, tuple) else sel
+            stat_obj = get_stat_by_id(stat_id)
+
+            if stat_obj is None:
+                st.error("No se encontró la estadística seleccionada.")
+            else:
+                st.subheader("Editar valores")
+                with st.form("edit_stat_form"):
+                    new_goles = st.number_input("Goles", min_value=0, value=int(stat_obj.goles or 0), step=1)
+                    new_asist = st.number_input("Asistencias", min_value=0, value=int(stat_obj.asistencias or 0), step=1)
+                    new_pjs = st.number_input("Partidos jugados (opcional)", min_value=0, value=int(stat_obj.partidos_jugados or 0) if stat_obj.partidos_jugados is not None else 0, step=1)
+                    btn_save = st.form_submit_button("Guardar cambios")
+                    btn_delete = st.form_submit_button("Eliminar esta estadística")
+
+                    if btn_save:
+                        try:
+                            pj_val = int(new_pjs) if new_pjs > 0 else None
+                            updated = update_player_stats(stat_id, goles=new_goles, asistencias=new_asist, partidos_jugados=pj_val)
+                            if updated:
+                                st.success("Estadística actualizada correctamente.")
+                                st.session_state["flash_message"] = "Estadística actualizada."
+                                st.rerun()
+                            else:
+                                st.error("No se pudo actualizar (registro no encontrado).")
+                        except Exception as e:
+                            st.error(f"Error al guardar: {e}")
+
+                    if btn_delete:
+                        confirm = st.radio("¿Estás seguro? Selecciona 'Sí' para confirmar eliminación.", ("No", "Sí"))
+                        if confirm == "Sí":
+                            try:
+                                ok = delete_player_stats(stat_id)
+                                if ok:
+                                    st.success("Estadística eliminada.")
+                                    st.session_state["flash_message"] = "Estadística eliminada."
+                                    st.rerun()
+                                else:
+                                    st.error("No se pudo eliminar (registro no encontrado).")
+                            except Exception as e:
+                                st.error(f"Error al eliminar: {e}")
+
