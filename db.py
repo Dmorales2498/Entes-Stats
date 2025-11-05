@@ -2,7 +2,7 @@
 from typing import List, Optional, Tuple
 from contextlib import contextmanager
 from sqlalchemy.orm import Session
-from sqlalchemy import func, text
+from sqlalchemy import func, text,distinct
 import os
 from pathlib import Path
 from PIL import Image
@@ -144,25 +144,22 @@ def get_stats_by_match(match_id: int) -> List[PlayerStats]:
 # ---------- Agregaciones ----------
 def get_player_totals(player_id: int):
     """
-    Retorna un tuple con:
-      (total_goles, total_asistencias, suma_goles_asistencias, matches_played_distinct, partidos_jugados_sum)
+    Retorna (total_goles, total_asistencias, suma_goles_asistencias, matches_played_distinct)
 
-    - matches_played_distinct: COUNT(DISTINCT match_id) — cuántos partidos distintos aparece el jugador.
-    - partidos_jugados_sum: SUM(partidos_jugados) — si usas ese campo para indicar 1/0 u horas, se suma.
+    matches_played_distinct = COUNT(DISTINCT match_id) — cuántos partidos distintos aparece el jugador.
     """
     with get_session() as session:
         row = session.query(
             func.coalesce(func.sum(PlayerStats.goles), 0).label("goles"),
             func.coalesce(func.sum(PlayerStats.asistencias), 0).label("asistencias"),
-            func.coalesce(func.count(distinct(PlayerStats.match_id)), 0).label("matches_played"),
-            func.coalesce(func.sum(func.coalesce(PlayerStats.partidos_jugados, 0)), 0).label("pjs_sum")
+            func.coalesce(func.count(distinct(PlayerStats.match_id)), 0).label("matches_played")
         ).filter(PlayerStats.player_id == player_id).one()
 
         goles = int(row.goles or 0)
         asistencias = int(row.asistencias or 0)
         matches_played = int(row.matches_played or 0)
-        pjs_sum = int(row.pjs_sum or 0)
-        return goles, asistencias, goles + asistencias, matches_played, pjs_sum
+        return goles, asistencias, goles + asistencias, matches_played
+
 
 def get_top_scorers(limit: int = 5) -> List[Tuple[int, str, int]]:
     with get_session() as session:
