@@ -10,7 +10,7 @@ from db import (
     create_match, get_matches, add_player_stats,
     get_player_totals, get_top_scorers, get_top_assisters, get_top_contributions,
     delete_player, update_player_photo,
-    get_stats_by_player, get_stat_by_id, update_player_stats, delete_player_stats,get_team_record,get_match_history
+    get_stats_by_player, get_stat_by_id, update_player_stats, delete_player_stats,get_team_record,get_match_history,get_player_totals
 )
 
 
@@ -252,7 +252,7 @@ elif page == "Reportes":
         st.write(f"Goles: **{goles}**")
         st.write(f"Asistencias: **{asist}**")
         st.write(f"Total (Goles + Asist): **{tot}**")
-        st.write(f"Partidos jugados: **{partidos}**")
+        st.write(f"Suma campo 'partidos_jugados' en registros: **{pjs_sum}**")
 
     st.markdown("---")
     st.subheader("Histórico de partidos — Entes FC")
