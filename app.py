@@ -208,6 +208,8 @@ elif page == "Añadir estadísticas":
                     st.error(f"Error al guardar estadísticas: {e}")
 
 # ---------- Reportes ----------
+# app.py - reemplaza la sección Reportes por esto
+
 elif page == "Reportes":
     st.header("Reportes y rankings")
 
@@ -248,6 +250,51 @@ elif page == "Reportes":
         st.write(f"Asistencias: **{asist}**")
         st.write(f"Total (Goles + Asist): **{tot}**")
         st.write(f"Partidos jugados: **{partidos}**")
+
+    st.markdown("---")
+    st.subheader("Histórico de partidos — Entes FC")
+
+    # filtros
+    col1, col2, col3 = st.columns([1,1,1])
+    with col1:
+        limit = st.number_input("Mostrar últimos N partidos (0 = todos)", min_value=0, value=10, step=1)
+    with col2:
+        start_date = st.text_input("Desde (YYYY-MM-DD)", value="")
+    with col3:
+        end_date = st.text_input("Hasta (YYYY-MM-DD)", value="")
+
+    ld = int(limit) if limit and limit > 0 else None
+    sd = start_date.strip() if start_date.strip() else None
+    ed = end_date.strip() if end_date.strip() else None
+
+    # mostrar registro del equipo en el periodo
+    record = get_team_record(start_date=sd, end_date=ed)
+    st.write("**Registro del equipo (Entes FC)**")
+    st.write(f"Partidos jugados: **{record['played']}** | Victorias: **{record['wins']}** | Empates: **{record['draws']}** | Derrotas: **{record['losses']}**")
+    st.write(f"Goles a favor: **{record['goals_for']}** | Goles en contra: **{record['goals_against']}** | Dif: **{record['goal_diff']}** | Puntos: **{record['points']}**")
+
+    st.markdown("**Lista de partidos** (más recientes arriba)")
+    history = get_match_history(limit=ld, start_date=sd, end_date=ed)
+    if not history:
+        st.info("No hay partidos registrados con marcador en ese rango.")
+    else:
+        # construir tabla simple
+        rows = []
+        for m in history:
+            # human label result
+            res_map = {"W": "Victoria", "D": "Empate", "L": "Derrota", "PENDING": "Pendiente"}
+            rows.append({
+                "Fecha": m["fecha"],
+                "Rival": m["rival"],
+                "Local (Entes)": "Sí" if m["local"] else "No",
+                "Entes": m["entes_goals"] if m["entes_goals"] is not None else "-",
+                "Rival_goles": m["opponent_goals"] if m["opponent_goals"] is not None else "-",
+                "Resultado": res_map.get(m["result"], m["result"])
+            })
+        import pandas as pd
+        df = pd.DataFrame(rows)
+        st.dataframe(df)
+
 
 # ---------- Eliminar jugador ----------
 elif page == "Eliminar jugador":
