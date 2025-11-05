@@ -8,8 +8,10 @@ from db import (
     create_player, get_players, ensure_fotos_dir,
     create_match, get_matches, add_player_stats,
     get_player_totals, get_top_scorers, get_top_assisters, get_top_contributions,
-    delete_player, update_player_photo
+    delete_player, update_player_photo,
+    get_match_history, get_team_record
 )
+
 
 st.set_page_config(page_title="Entes Stats", layout="wide")
 
