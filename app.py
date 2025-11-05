@@ -10,7 +10,7 @@ from db import (
     create_match, get_matches, add_player_stats,
     get_player_totals, get_top_scorers, get_top_assisters, get_top_contributions,
     delete_player, update_player_photo,
-    get_stats_by_player, get_stat_by_id, update_player_stats, delete_player_stats,get_team_record,get_match_history,get_player_totals
+    get_stats_by_player, get_stat_by_id, update_player_stats, delete_player_stats,get_team_record,get_match_history,get_player_totals,partidos_jugados
 )
 
 
