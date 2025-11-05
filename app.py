@@ -252,7 +252,7 @@ elif page == "Reportes":
         st.write(f"Goles: **{goles}**")
         st.write(f"Asistencias: **{asist}**")
         st.write(f"Total (Goles + Asist): **{tot}**")
-        st.write(f"Suma campo 'partidos_jugados' en registros: **{pjs_sum}**")
+        st.write(f"partidos jugados: **{pjs_sum}**")
 
     st.markdown("---")
     st.subheader("Histórico de partidos — Entes FC")
