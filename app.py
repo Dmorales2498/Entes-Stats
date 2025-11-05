@@ -11,7 +11,7 @@ from db import (
     delete_player, update_player_photo
 )
 
-st.set_page_config(page_title="Futbol Stats - Demo", layout="wide")
+st.set_page_config(page_title="Entes Stats", layout="wide")
 
 # ----- Autenticación mínima por roles (admin / viewer) -----
 def get_secrets_passwords():
@@ -68,7 +68,7 @@ else:
                     del st.session_state[k]
             st.rerun()
 
-st.title("⚽ Futbol Stats — App de práctica (demo)")
+st.title("⚽ Entes Stats — Temporada 2025/26")
 
 # Mostrar flash_message si existe
 if "flash_message" in st.session_state:
