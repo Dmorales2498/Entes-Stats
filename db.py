@@ -142,23 +142,31 @@ def get_stats_by_match(match_id: int) -> List[PlayerStats]:
 
 
 # ---------- Agregaciones ----------
+# Asegúrate de tener esto en los imports:
+# from sqlalchemy import func, text, distinct
+
 def get_player_totals(player_id: int):
     """
-    Retorna (total_goles, total_asistencias, suma_goles_asistencias, matches_played_distinct)
+    Retorna una tupla con:
+      (total_goles, total_asistencias, suma_goles_asistencias,
+       matches_played_distinct, partidos_jugados_sum)
 
-    matches_played_distinct = COUNT(DISTINCT match_id) — cuántos partidos distintos aparece el jugador.
+    - matches_played_distinct: COUNT(DISTINCT match_id) — cuántos partidos distintos aparece el jugador.
+    - partidos_jugados_sum: SUM(partidos_jugados) — suma del campo partidos_jugados en los registros.
     """
     with get_session() as session:
         row = session.query(
             func.coalesce(func.sum(PlayerStats.goles), 0).label("goles"),
             func.coalesce(func.sum(PlayerStats.asistencias), 0).label("asistencias"),
-            func.coalesce(func.count(distinct(PlayerStats.match_id)), 0).label("matches_played")
+            func.coalesce(func.count(distinct(PlayerStats.match_id)), 0).label("matches_played"),
+            func.coalesce(func.sum(func.coalesce(PlayerStats.partidos_jugados, 0)), 0).label("pjs_sum")
         ).filter(PlayerStats.player_id == player_id).one()
 
         goles = int(row.goles or 0)
         asistencias = int(row.asistencias or 0)
         matches_played = int(row.matches_played or 0)
-        return goles, asistencias, goles + asistencias, matches_played
+        pjs_sum = int(row.pjs_sum or 0)
+        return goles, asistencias, goles + asistencias, matches_played, pjs_sum
 
 
 def get_top_scorers(limit: int = 5) -> List[Tuple[int, str, int]]:
